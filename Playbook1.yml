@@ -1,0 +1,53 @@
+---
+  - name: Installment playbook 
+    hosts: altschoolexamip
+    become: yes
+    become_user: root
+    tasks:
+      - name: apt update -y
+        shell: apt update -y
+
+      - name: Installing packages
+        shell: |
+          apt install apache2 -y
+          apt install git -y
+
+      - name: Creating php Repo
+        shell: |
+          wget -qO - https://packages.sury.org/php/apt.gpg | sudo apt-key add -
+          echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/sury-php.list
+          apt update -y 
+          
+      - name: Installing php and its Extensions
+        apt: 
+          name:
+            - php8.1
+            - php-common 
+            - php-curl 
+            - php-json 
+            - php-mbstring 
+            - php-mysql 
+            - php-xml 
+            - php-zip
+            - php-pgsql
+            
+      - name: Download Composer
+        shell: curl -sS https://getcomposer.org/installer -o composer-setup.php
+        args:
+          chdir: ~
+
+      - name: Verification Part1
+        shell: curl -sS https://composer.github.io/installer.sig
+        register: HASH
+        args:
+          chdir: ~
+
+      - name: Verification Part2
+        shell: php -r "if (hash_file('SHA384', 'composer-setup.php') === '{{HASH.stdout}}') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
+
+      - name: Install Composer
+        shell: sudo php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+        args:
+          chdir: ~
+
+        

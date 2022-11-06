@@ -1,0 +1,76 @@
+---
+  - name: Configuration and setup Laravel 
+    hosts: altschoolexamip
+    become: yes
+    become_user: root
+    tasks:
+      - name: apt update -y
+        shell: apt update -y
+
+      - name: delete existing laravel project
+        file:
+          state: absent
+          path: /var/www/html/Examlaravel
+
+      - name: Clone Laravel project 
+        git:
+          repo: https://github.com/f1amy/laravel-realworld-example-app
+          dest: /var/www/html/Examlaravel
+          clone: yes
+          update: yes
+
+      - name: Edit .env file
+        copy: 
+          src: ~/.env
+          dest: /var/www/html/Examlaravel/.env
+
+      - name: configure Apache hosts
+        copy:
+          src: ~/apache.conf
+          dest: /etc/apache2/sites-available/apache.conf
+
+      - name: Enable Configuration
+        shell: |
+           a2dissite 000-default.conf
+           a2enmod rewrite
+           a2ensite apache.conf
+           systemctl restart apache2
+        args:
+          chdir: /etc/apache2/sites-available/
+
+      - name: chmod
+        shell: |
+           chown -R :www-data /var/www/html/Examlaravel
+           chmod -R 775 /var/www/html/Examlaravel
+           chmod -R 775 /var/www/html/Examlaravel/storage
+           chmod -R 775 /var/www/html/Examlaravel/bootstrap/cache
+
+      - name: Composer Install
+        shell: |
+          "echo $COMPOSER_ALLOW_SUPERUSER"
+          composer install 
+        args:
+          chdir: /var/www/html/Examlaravel
+        environment:
+          COMPOSER_ALLOW_SUPERUSER: 1
+
+      - name: run php artisan migrate 
+        shell: php artisan migrate
+        args:
+          chdir: /var/www/html/Examlaravel
+
+      - name: replace the web.php with active one
+        copy:
+          src: ~/web.php
+          dest: /var/www/html/Examlaravel/routes/web.php 
+          owner: root
+          mode: '0744'
+
+      - name: create php key
+        shell: php artisan key:generate
+        args:
+          chdir: /var/www/html/Examlaravel
+        
+
+
+

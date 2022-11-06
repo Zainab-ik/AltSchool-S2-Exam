@@ -1,0 +1,10 @@
+---
+  - name: Run script to install Postgresql 
+    hosts: altschoolexamip
+    become: yes
+    become_user: root
+    tasks:
+      - name: Run script.sh
+        script: ~/script.sh 
+       
+
